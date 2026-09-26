@@ -1,0 +1,37 @@
+# Onboarding Reason Code
+
+## Restart_NoReason
+Meaning: Default value when no reason is specified.
+Device operation: No specific device operation is documented for this reason.
+
+## Restart_Manual
+Meaning: Manually triggered by setting axon.orchestrator.onboardingRestart = true.
+Device operation: Onboarding restart is triggered manually.
+
+## Restart_BootstrapTimeout
+Meaning: Set the first time the device boots and current.url is the same as onboarding.url. This usually means the previous onboarding did not finish before the device rebooted.
+Device operation: Onboarding restart is triggered because bootstrap onboarding is not complete.
+
+## Restart_BucketIdTimeout
+Meaning: Create Producer failed, /provision/new failed while sending helo, or there is no bucket ID on C2G.
+Device operation: Retry 5 times with a 5 second interval for each retry. After 5 failed retries, trigger onboarding restart.
+
+## Restart_WanStatusTriggered
+Meaning: WAN up/down status changed, or WAN status changed because the IP address changed.
+Device operation: Behavior depends on WAN down period and WAN IP address.
+- If WAN IP changed and WAN down period is less than 5.5 hours, avec_producer is running and will be restarted immediately.
+- If WAN IP changed and WAN down period is more than 5.5 hours, avec_producer is not running because the back-off interval already triggered onboarding restart. The onboarding restart flow is executed.
+- If WAN down period is less than 1 hour and WAN IP does not change, keep alive has not timed out and the device is allowed to retry within 2 minutes from the WAN up event. If recovery is not successful, restart avec_producer.
+- If WAN down period is more than 1 hour but back-off period is less than 4.5 hours, keep alive has timed out and back-off is triggered with a maximum back-off interval of 4.5 hours. orchestrator_bl allows avec_producer to recover within 2 minutes. If recovery is not successful, restart avec_producer.
+
+## Restart_RetryFailed
+Meaning: Creating the Pulsar client to get partition topics failed.
+Device operation: Trigger backoff retry using 30 seconds << (retry times - 1). Total retry time is around 4.5 hours. After 4.5 hours, trigger onboarding restart.
+
+## Restart_GeneralFailed
+Meaning: The device tried to connect to the server but axon.orchestrator.status.configValidation = false because of invalid cert, key, or CA. It can also happen when starting the avec_producer process fails in CPE.
+Device operation: No specific retry count is documented. The failure leads to onboarding restart handling.
+
+## Restart_ProvisionTimeout
+Meaning: 24 hours passed after the Pulsar client connected to OB. The 24 hour timeout is configurable in axon.orchestrator.onboarding.configTimeout in milliseconds.
+Device operation: If the device is stuck in OB for 24 hours, regardless of state, trigger onboarding restart.
