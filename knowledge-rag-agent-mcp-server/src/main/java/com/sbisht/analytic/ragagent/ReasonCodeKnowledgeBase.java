@@ -1,4 +1,4 @@
-package com.sbisht.analytic.agent.service;
+package com.sbisht.analytic.ragagent;
 
 import com.sbisht.analytic.agent.dto.QueryResult;
 import org.springframework.core.io.ResourceLoader;
@@ -12,12 +12,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
-public class ReasonCodeKnowledgeBase {
+class ReasonCodeKnowledgeBase {
 
     private static final Pattern CHUNK = Pattern.compile("(?ms)^##\\s+(Restart_[A-Za-z0-9_]+)\\s*$\\R(.*?)(?=^##\\s+Restart_|\\z)");
     private static final Pattern REASON_CODE = Pattern.compile("\\bRestart_[A-Za-z0-9_]+\\b");
@@ -28,40 +27,24 @@ public class ReasonCodeKnowledgeBase {
 
     private final List<ReasonCodeChunk> chunks;
 
-    public ReasonCodeKnowledgeBase(ResourceLoader resourceLoader) throws IOException {
-        var resource = resourceLoader.getResource("classpath:/knowledge/onboarding-reason-codes.txt");
-        var content = resource.getContentAsString(StandardCharsets.UTF_8);
-        this.chunks = parse(content);
+    ReasonCodeKnowledgeBase(ResourceLoader resourceLoader) throws IOException {
+        var resource = resourceLoader.getResource("classpath:knowledge/onboarding-reason-codes.txt");
+        this.chunks = parse(resource.getContentAsString(StandardCharsets.UTF_8));
     }
 
-    public List<ReasonCodeChunk> retrieve(String prompt, int maxChunks) {
-        return retrieve(prompt, null, maxChunks, true);
-    }
-
-    public List<ReasonCodeChunk> retrieve(String prompt, QueryResult queryResult, int maxChunks) {
-        return retrieve(prompt, queryResult, maxChunks, false);
-    }
-
-    public List<ReasonCodeChunk> retrieveWithFallback(String prompt, QueryResult queryResult, int maxChunks) {
-        return retrieve(prompt, queryResult, maxChunks, true);
-    }
-
-    private List<ReasonCodeChunk> retrieve(String prompt, QueryResult queryResult, int maxChunks, boolean fallbackToFirstChunks) {
+    List<ReasonCodeChunk> retrieve(String prompt, QueryResult queryResult, int maxChunks, boolean fallback) {
         var exactReasonCodes = exactReasonCodes(prompt);
         if (queryResult != null) {
             exactReasonCodes.addAll(reasonCodesFromRows(queryResult));
         }
 
-        var tokenizedPrompt = tokens(prompt);
+        var tokens = tokens(prompt);
         var scored = new ArrayList<ScoredChunk>();
         for (var chunk : chunks) {
-            var score = 0;
-            if (exactReasonCodes.contains(chunk.reasonCode().toLowerCase(Locale.ROOT))) {
-                score += 100;
-            }
-            for (var token : tokenizedPrompt) {
+            var score = exactReasonCodes.contains(chunk.reasonCode().toLowerCase(Locale.ROOT)) ? 100 : 0;
+            for (var token : tokens) {
                 if (chunk.searchText().contains(token)) {
-                    score += 1;
+                    score++;
                 }
             }
             if (score > 0) {
@@ -70,9 +53,8 @@ public class ReasonCodeKnowledgeBase {
         }
 
         if (scored.isEmpty()) {
-            return fallbackToFirstChunks ? chunks.stream().limit(maxChunks).toList() : List.of();
+            return fallback ? chunks.stream().limit(maxChunks).toList() : List.of();
         }
-
         return scored.stream()
                 .sorted(Comparator.comparingInt(ScoredChunk::score).reversed())
                 .limit(maxChunks)
@@ -80,11 +62,10 @@ public class ReasonCodeKnowledgeBase {
                 .toList();
     }
 
-    public String format(List<ReasonCodeChunk> retrievedChunks) {
+    String format(List<ReasonCodeChunk> retrievedChunks) {
         if (retrievedChunks.isEmpty()) {
             return "No matching onboarding reason-code documentation was found.";
         }
-
         var formatted = new StringBuilder();
         for (var chunk : retrievedChunks) {
             formatted.append("Reason Code: ").append(chunk.reasonCode()).append('\n')
@@ -104,13 +85,11 @@ public class ReasonCodeKnowledgeBase {
 
     private Set<String> exactReasonCodes(String text) {
         var reasonCodes = new LinkedHashSet<String>();
-        if (text == null) {
-            return reasonCodes;
-        }
-
-        var matcher = REASON_CODE.matcher(text);
-        while (matcher.find()) {
-            reasonCodes.add(matcher.group().toLowerCase(Locale.ROOT));
+        if (text != null) {
+            var matcher = REASON_CODE.matcher(text);
+            while (matcher.find()) {
+                reasonCodes.add(matcher.group().toLowerCase(Locale.ROOT));
+            }
         }
         return reasonCodes;
     }
@@ -131,24 +110,21 @@ public class ReasonCodeKnowledgeBase {
         if (text == null || text.isBlank()) {
             return List.of();
         }
-
         var uniqueTokens = new LinkedHashMap<String, Boolean>();
-        for (var rawToken : text.toLowerCase(Locale.ROOT).split("[^a-z0-9_]+")) {
-            if (rawToken.length() >= 3 && !STOP_WORDS.contains(rawToken)) {
-                uniqueTokens.put(rawToken, Boolean.TRUE);
+        for (var token : text.toLowerCase(Locale.ROOT).split("[^a-z0-9_]+")) {
+            if (token.length() >= 3 && !STOP_WORDS.contains(token)) {
+                uniqueTokens.put(token, Boolean.TRUE);
             }
         }
         return List.copyOf(uniqueTokens.keySet());
     }
 
-    public record ReasonCodeChunk(String reasonCode,
-                                  String content) {
+    record ReasonCodeChunk(String reasonCode, String content) {
         String searchText() {
             return (reasonCode + "\n" + content).toLowerCase(Locale.ROOT);
         }
     }
 
-    private record ScoredChunk(ReasonCodeChunk chunk,
-                               int score) {
+    private record ScoredChunk(ReasonCodeChunk chunk, int score) {
     }
 }

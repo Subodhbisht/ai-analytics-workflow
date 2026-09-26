@@ -1,10 +1,8 @@
 package com.sbisht.analytic.agent.dto;
 
-import org.jspecify.annotations.Nullable;
-
 import java.util.List;
 import java.util.Map;
 
 public record QueryResult(String sql,
-                          List<Map<String, @Nullable Object>> rows) {
+                          List<Map<String, Object>> rows) {
 }
