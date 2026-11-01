@@ -90,7 +90,7 @@ java -jar sql-agent-mcp-server/target/sql-agent-mcp-server-0.0.1-SNAPSHOT.jar
 ```
 
 ```bash
-java -jar knowledge-rag-agent-mcp-server/target/knowledge-rag-agent-mcp-server-0.0.1-SNAPSHOT.jar
+java -jar knowledge-rag-agent-mcp-server/target/knowledge-rag-agent-mcp-server-0.0.1-SNAPSHOT-exec.jar
 ```
 
 ```bash

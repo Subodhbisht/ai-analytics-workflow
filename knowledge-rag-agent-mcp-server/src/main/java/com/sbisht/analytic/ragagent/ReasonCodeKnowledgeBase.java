@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
-class ReasonCodeKnowledgeBase {
+public class ReasonCodeKnowledgeBase {
 
     private static final Pattern CHUNK = Pattern.compile("(?ms)^##\\s+(Restart_[A-Za-z0-9_]+)\\s*$\\R(.*?)(?=^##\\s+Restart_|\\z)");
     private static final Pattern REASON_CODE = Pattern.compile("\\bRestart_[A-Za-z0-9_]+\\b");
@@ -32,7 +32,7 @@ class ReasonCodeKnowledgeBase {
         this.chunks = parse(resource.getContentAsString(StandardCharsets.UTF_8));
     }
 
-    List<ReasonCodeChunk> retrieve(String prompt, QueryResult queryResult, int maxChunks, boolean fallback) {
+    public List<ReasonCodeChunk> retrieve(String prompt, QueryResult queryResult, int maxChunks, boolean fallback) {
         var exactReasonCodes = exactReasonCodes(prompt);
         if (queryResult != null) {
             exactReasonCodes.addAll(reasonCodesFromRows(queryResult));
@@ -62,7 +62,7 @@ class ReasonCodeKnowledgeBase {
                 .toList();
     }
 
-    String format(List<ReasonCodeChunk> retrievedChunks) {
+    public String format(List<ReasonCodeChunk> retrievedChunks) {
         if (retrievedChunks.isEmpty()) {
             return "No matching onboarding reason-code documentation was found.";
         }
@@ -119,7 +119,7 @@ class ReasonCodeKnowledgeBase {
         return List.copyOf(uniqueTokens.keySet());
     }
 
-    record ReasonCodeChunk(String reasonCode, String content) {
+    public record ReasonCodeChunk(String reasonCode, String content) {
         String searchText() {
             return (reasonCode + "\n" + content).toLowerCase(Locale.ROOT);
         }

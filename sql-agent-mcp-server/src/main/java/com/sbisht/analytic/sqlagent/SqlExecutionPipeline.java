@@ -40,7 +40,7 @@ class SqlExecutionPipeline {
         var result = normalize(sqlGenerator.prompt(question).call().entity(SqlGenerationResult.class));
         log.info("SQL generation completed confident={} durationMs={}",
                 result.confident(), elapsedMillis(startedAt));
-        log.debug("Generated SQL: {}", result.sql());
+        log.info("Generated SQL: {}", result.sql());
         return result;
     }
 

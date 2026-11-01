@@ -1,0 +1,6 @@
+package com.sbisht.analytic.agent.service;
+
+public enum WorkflowExecutionState {
+    STARTED, ROUTING, SQL_GENERATING, SQL_VALIDATING, SQL_EXECUTING, SQL_REPAIRING,
+    RAG_RETRIEVING, RESULT_ANALYZING, WAITING_FOR_HUMAN, COMPLETED, FAILED
+}

@@ -2,7 +2,7 @@
 TABLE public.ff37_device_reonboard_events (
 	id bigserial NOT NULL,
 	device_id varchar(64) NOT NULL,
-	status varchar(50) NOT NULL,
+	status varchar(50) NOT NULL, // Possible values -> DONE, ERROR, PREPARING
 	event_time timestamp NOT NULL,
 	reason varchar(200) NOT NULL,
 	bec_name varchar(20) NOT NULL,

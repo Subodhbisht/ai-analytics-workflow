@@ -33,3 +33,6 @@ build/
 .vscode/
 secrets.env
 .DS_Store
+
+### docker
+docker
